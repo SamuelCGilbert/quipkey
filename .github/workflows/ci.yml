@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Ruff
+        run: uvx ruff check src tests scripts
+      - name: install.sh syntax and shellcheck
+        run: |
+          bash -n packaging/linux/install.sh
+          shellcheck -S warning packaging/linux/install.sh scripts/*.sh
+
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-22.04]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: System packages (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libportaudio2
+      - name: Install
+        run: |
+          uv venv --python 3.12 --managed-python
+          uv pip install ".[dev]"
+      - name: Unit tests
+        run: uv run --no-sync pytest -v
+      - name: Smoke test (imports and CLI)
+        shell: bash
+        run: |
+          uv run --no-sync python -m hotmic --version
+          uv run --no-sync python -m hotmic paths
+          uv run --no-sync python -c "import hotmic.app, hotmic.transcriber, hotmic.platforms; hotmic.platforms.get_platform(); print('imports ok')"

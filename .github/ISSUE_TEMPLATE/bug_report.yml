@@ -1,0 +1,79 @@
+name: Bug report
+description: Something doesn't work as it should.
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Please check the [open issues](../issues) first, in case it's already known.
+        **Before you attach a log, read it:** it contains the text you dictated.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+      placeholder: |
+        1. Focused Firefox and pressed Ctrl+Shift+D
+        2. Said "hello world" and pressed Ctrl+Shift+D again
+        3. Expected "Hello world." to be typed; nothing was typed
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Run the app with `--version`, or look in the tray menu (Windows).
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows 11
+        - Windows 10
+        - Linux, KDE Plasma (Wayland)
+        - Linux, KDE Plasma (X11)
+        - Linux, GNOME (Wayland)
+        - Linux, GNOME (X11)
+        - Linux, other desktop
+        - macOS
+    validations:
+      required: true
+  - type: input
+    id: distro
+    attributes:
+      label: Distribution and version (Linux)
+      placeholder: "Ubuntu 24.04, Fedora 41, ..."
+  - type: dropdown
+    id: install
+    attributes:
+      label: How did you install it?
+      options:
+        - Windows installer (setup.exe)
+        - Windows portable zip
+        - Linux tarball with install.sh
+        - pipx / pip from source
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: app
+    attributes:
+      label: The app you were typing into (if it matters)
+      placeholder: "Konsole, Word, Chrome, ..."
+  - type: textarea
+    id: log
+    attributes:
+      label: Log
+      description: |
+        The relevant lines from the log file. Windows: tray icon → Log folder. Linux: `~/.local/state/hotmic/hotmic.log`.
+        Remove anything you don't want to share (the log includes dictated text).
+      render: text
+  - type: textarea
+    id: config
+    attributes:
+      label: Settings
+      description: Your `config.json`, if you changed any settings.
+      render: json

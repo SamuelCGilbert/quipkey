@@ -1,0 +1,39 @@
+name: Feature request
+description: Suggest an idea or an improvement.
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea. For open-ended questions or brainstorming, [Discussions](../discussions) may be a better place.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the situation, not only the solution. "When I dictate code, ..."
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives or workarounds you've tried
+  - type: checkboxes
+    id: platforms
+    attributes:
+      label: Which platforms does this concern?
+      options:
+        - label: Windows
+        - label: Linux
+        - label: macOS
+  - type: checkboxes
+    id: help
+    attributes:
+      label: Contributing
+      options:
+        - label: I'd like to work on this myself.

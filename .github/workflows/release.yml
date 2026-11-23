@@ -1,0 +1,103 @@
+name: Release
+
+# Push a tag like v0.2.0 (matching VERSION in src/<package>/meta.py) to build and publish a
+# release. Run it by hand (workflow_dispatch) to build the artifacts without releasing.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        name: Read the version and check it matches the tag
+        run: |
+          version=$(python3 -c "import glob, re; t = open(glob.glob('src/*/meta.py')[0]).read(); print(re.search(r'VERSION = \"([^\"]+)\"', t).group(1))")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [ "${GITHUB_REF_TYPE}" = tag ] && [ "${GITHUB_REF_NAME}" != "v$version" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} doesn't match VERSION $version in meta.py"
+            exit 1
+          fi
+
+  windows:
+    needs: version
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Inno Setup
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) {
+            choco install innosetup -y --no-progress
+          }
+      - name: Build
+        run: |
+          uv venv --python 3.12 --managed-python
+          uv pip install ".[dev]"
+          uv run --no-sync python scripts/build.py
+      - name: Smoke test the build
+        shell: bash
+        run: |
+          test -f dist/pyinstaller/*/*.exe
+          ls -la dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: |
+            dist/*.exe
+            dist/*.zip
+          if-no-files-found: error
+
+  linux:
+    needs: version
+    # The oldest supported runner: the build then runs on glibc 2.35 and newer.
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: System packages
+        run: sudo apt-get update && sudo apt-get install -y libportaudio2
+      - name: Build
+        run: ./scripts/build-linux.sh
+      - name: Smoke test the build
+        run: |
+          app=$(ls dist/pyinstaller)
+          "dist/pyinstaller/$app/$app" --version
+          tar -tzf dist/*.tar.gz | head
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: dist/*.tar.gz
+          if-no-files-found: error
+
+  release:
+    if: github.ref_type == 'tag'
+    needs: [version, windows, linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+      - name: Checksums
+        run: cd out && sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" out/* \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes \
+            --notes-file .github/release-notes.md

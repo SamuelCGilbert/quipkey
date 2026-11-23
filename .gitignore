@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.venv/
+.venv-build/
+.tools/
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+*.log
+config.json
+state.json
+CLAUDE.local.md
