@@ -22,6 +22,7 @@ if not (os.environ.get("HF_HOME") or os.environ.get("HF_HUB_CACHE")):
     os.environ["HF_HUB_CACHE"] = str(paths.models_dir())
 os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")  # no console in windowed builds
 os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
+os.environ.setdefault("HF_HUB_VERBOSITY", "error")  # no "unauthenticated requests" warning
 os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")  # Windows without Developer Mode
 # Plain HTTPS downloads: Xet keeps its own chunk cache outside the models folder (where we can't
 # show progress, and which the uninstaller wouldn't clean up).

@@ -267,7 +267,7 @@ if [ "$UNINSTALL" = 1 ]; then
   rm -f "$BIN" "$DESKTOP_FILE" "$ICON"
   rm -rf "$APPDIR" "$PREFIX/install.sh"
   if [ "$PURGE" = 1 ]; then
-    rm -rf "$PREFIX" "$CONFIG/$APP" "$STATE/$APP"
+    rm -rf "${PREFIX:?}" "${CONFIG:?}/${APP:?}" "${STATE:?}/${APP:?}"
     ok "Removed the app, settings and downloaded models."
   else
     rmdir "$PREFIX" 2>/dev/null || true

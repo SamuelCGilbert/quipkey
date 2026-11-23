@@ -207,6 +207,8 @@ def _clean_env() -> dict:
         env["LD_LIBRARY_PATH"] = orig
     elif getattr(sys, "frozen", False):
         env.pop("LD_LIBRARY_PATH", None)
+    for k in [k for k in env if k.startswith(("_PYI_", "_MEIPASS"))]:
+        del env[k]  # PyInstaller's own bookkeeping; would confuse another frozen program
     return env
 
 
