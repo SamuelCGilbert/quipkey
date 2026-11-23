@@ -1,9 +1,9 @@
-# Contributing to hotmic
+# Contributing to Quipkey
 
 Thanks for helping. Bug reports, ideas, docs fixes and code are all welcome.
 
-- **Bugs and feature requests:** use the [issue forms](https://github.com/SamuelCGilbert/hotmic/issues/new/choose).
-- **Questions and ideas:** [Discussions](https://github.com/SamuelCGilbert/hotmic/discussions).
+- **Bugs and feature requests:** use the [issue forms](https://github.com/SamuelCGilbert/quipkey/issues/new/choose).
+- **Questions and ideas:** [Discussions](https://github.com/SamuelCGilbert/quipkey/discussions).
 - **Code:** for anything bigger than a small fix, open an issue first so we can agree on the approach.
 
 By contributing, you agree that your contribution is licensed under the GPL-3.0-or-later, like the rest of the project.
@@ -15,7 +15,7 @@ You need Python 3.10+ (3.12 is what the releases use) and, on Linux, `libportaud
 ```sh
 uv venv --python 3.12
 uv pip install -e ".[dev]"
-uv run hotmic            # run from source
+uv run quipkey            # run from source
 uv run pytest            # tests
 uv run ruff check src tests scripts
 ```
@@ -24,16 +24,16 @@ Stop an installed copy first, because both want the same hotkey (Windows) or soc
 
 Useful while developing:
 
-- `HOTMIC_TEST_WAV=path/to/16k-mono.wav` replaces the microphone audio with a file, for repeatable end-to-end tests.
-- `hotmic paths` shows where settings, the log and models are.
+- `QUIPKEY_TEST_WAV=path/to/16k-mono.wav` replaces the microphone audio with a file, for repeatable end-to-end tests.
+- `quipkey paths` shows where settings, the log and models are.
 - The log file has every step: model load, which mic, transcription time, which paste method.
 
 ## How it's organized
 
 ```
-src/hotmic/
+src/quipkey/
   meta.py         the app's name, id, version and URL (the only place they're written)
-  cli.py          command line; `hotmic toggle` must stay fast, so no heavy imports here
+  cli.py          command line; `quipkey toggle` must stay fast, so no heavy imports here
   paths.py        per-user folders on each OS
   config.py       settings (config.json), UI state (state.json), logging
   app.py          the state machine: idle -> recording -> busy -> idle
@@ -62,7 +62,7 @@ Write `platforms/macos.py` with a `Platform` subclass (global hotkey, typing, ov
 
 ## Releasing
 
-1. Update `VERSION` in `src/hotmic/meta.py`.
+1. Update `VERSION` in `src/quipkey/meta.py`.
 2. Commit, then tag and push: `git tag v0.2.0 && git push origin main v0.2.0`.
 3. The **Release** workflow builds the Windows installer and zip (on `windows-latest`) and the Linux tarball (on `ubuntu-22.04`, for glibc 2.35+), then creates the GitHub release with checksums. It fails if the tag doesn't match `VERSION`.
 
@@ -72,9 +72,9 @@ To build locally: `python scripts/build.py` (Windows; Inno Setup 6 makes the ins
 
 The name is written in as few places as possible:
 
-1. `src/hotmic/meta.py`: `APP_NAME`, `APP_DISPLAY_NAME`, `APP_ID`, `REPO_URL`. Everything at runtime (folders, socket, systemd units, KDE shortcut, KWin script, D-Bus name, tray, installer, build artifacts) comes from these.
-2. The package folder `src/hotmic/` and, in `pyproject.toml`, the project name, the `[project.scripts]` entry and the paths. Imports inside the package are relative, so they don't change.
-3. The tests (`from hotmic import ...`) and the `HOTMIC_TEST_WAV` mention in docs (the variable is `<APP_NAME>_TEST_WAV`).
-4. Docs and GitHub links: `git grep -i hotmic`.
+1. `src/quipkey/meta.py`: `APP_NAME`, `APP_DISPLAY_NAME`, `APP_ID`, `REPO_URL`. Everything at runtime (folders, socket, systemd units, KDE shortcut, KWin script, D-Bus name, tray, installer, build artifacts) comes from these.
+2. The package folder `src/quipkey/` and, in `pyproject.toml`, the project name, the `[project.scripts]` entry and the paths. Imports inside the package are relative, so they don't change.
+3. The tests (`from quipkey import ...`) and the `QUIPKEY_TEST_WAV` mention in docs (the variable is `<APP_NAME>_TEST_WAV`).
+4. Docs and GitHub links: `git grep -i quipkey`.
 
 Existing installs keep their old folders; uninstall the old name first.

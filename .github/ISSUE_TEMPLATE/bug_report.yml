@@ -68,7 +68,7 @@ body:
     attributes:
       label: Log
       description: |
-        The relevant lines from the log file. Windows: tray icon → Log folder. Linux: `~/.local/state/hotmic/hotmic.log`.
+        The relevant lines from the log file. Windows: tray icon → Log folder. Linux: `~/.local/state/quipkey/quipkey.log`.
         Remove anything you don't want to share (the log includes dictated text).
       render: text
   - type: textarea

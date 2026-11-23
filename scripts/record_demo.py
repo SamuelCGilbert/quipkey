@@ -26,18 +26,18 @@ os.environ["LOCALAPPDATA"] = str(tmp / "local")
 os.environ.setdefault("HF_HUB_CACHE", str(Path.home() / ".cache/huggingface/hub"))
 sys.path.insert(0, str(ROOT / "src"))
 
-from hotmic import paths  # noqa: E402
+from quipkey import paths  # noqa: E402
 
 paths.config_dir().mkdir(parents=True)
 paths.config_path().write_text(json.dumps({"hotkey": "ctrl+alt+f9"}))
 paths.state_path().write_text(json.dumps({"welcomed": True}))
-os.environ["HOTMIC_TEST_WAV"] = str(WAV)
+os.environ["QUIPKEY_TEST_WAV"] = str(WAV)
 
 from PIL import Image, ImageGrab  # noqa: E402
 
-from hotmic.app import App  # noqa: E402
-from hotmic.config import setup_logging  # noqa: E402
-from hotmic.platforms import get_platform  # noqa: E402
+from quipkey.app import App  # noqa: E402
+from quipkey.config import setup_logging  # noqa: E402
+from quipkey.platforms import get_platform  # noqa: E402
 
 with wave.open(str(WAV)) as w:
     audio = np.frombuffer(w.readframes(w.getnframes()), np.int16).astype(np.float32) / 32768

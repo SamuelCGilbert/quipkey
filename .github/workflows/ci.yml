@@ -43,6 +43,6 @@ jobs:
       - name: Smoke test (imports and CLI)
         shell: bash
         run: |
-          uv run --no-sync python -m hotmic --version
-          uv run --no-sync python -m hotmic paths
-          uv run --no-sync python -c "import hotmic.app, hotmic.transcriber, hotmic.platforms; hotmic.platforms.get_platform(); print('imports ok')"
+          uv run --no-sync python -m quipkey --version
+          uv run --no-sync python -m quipkey paths
+          uv run --no-sync python -c "import quipkey.app, quipkey.transcriber, quipkey.platforms; quipkey.platforms.get_platform(); print('imports ok')"

@@ -5,8 +5,8 @@
 **Linux (x86_64, glibc 2.35+, e.g. Ubuntu 22.04+, Debian 12+, Fedora 36+):** download the `.tar.gz`, then:
 
 ```sh
-tar -xzf hotmic-*-linux-x86_64.tar.gz
-cd hotmic-*-linux-x86_64
+tar -xzf quipkey-*-linux-x86_64.tar.gz
+cd quipkey-*-linux-x86_64
 ./install.sh
 ```
 

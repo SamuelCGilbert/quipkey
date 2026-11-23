@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from hotmic import cli, config, paths
-from hotmic.meta import APP_NAME, VERSION
+from quipkey import cli, config, paths
+from quipkey.meta import APP_NAME, VERSION
 
 
 @pytest.fixture
@@ -73,7 +73,7 @@ def test_cli_client_does_not_import_heavy_modules(home, monkeypatch):
     monkeypatch.setenv("XDG_RUNTIME_DIR", str(home))
     code = "\n".join([
         "import sys",
-        "from hotmic import cli",
+        "from quipkey import cli",
         "try:",
         "    cli.main(['toggle'])",
         "except SystemExit as e:",

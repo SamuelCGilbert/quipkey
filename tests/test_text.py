@@ -1,5 +1,5 @@
-from hotmic.config import DEFAULT_CONFIG
-from hotmic.text import clean_text, short_mic_name
+from quipkey.config import DEFAULT_CONFIG
+from quipkey.text import clean_text, short_mic_name
 
 CFG = dict(DEFAULT_CONFIG)
 

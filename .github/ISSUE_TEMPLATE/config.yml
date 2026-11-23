@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
   - name: Questions and help
-    url: https://github.com/SamuelCGilbert/hotmic/discussions/categories/q-a
+    url: https://github.com/SamuelCGilbert/quipkey/discussions/categories/q-a
     about: Ask how to set something up, or get help with a problem that may not be a bug.
   - name: Ideas and general discussion
-    url: https://github.com/SamuelCGilbert/hotmic/discussions
+    url: https://github.com/SamuelCGilbert/quipkey/discussions
     about: Share ideas, show your setup, talk about speech models.

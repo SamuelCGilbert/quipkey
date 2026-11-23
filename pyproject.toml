@@ -3,7 +3,7 @@ requires = ["hatchling>=1.24"]
 build-backend = "hatchling.build"
 
 [project]
-name = "hotmic"
+name = "quipkey"
 dynamic = ["version"]
 description = "Press a hotkey, speak, and the text is typed into any app. Local speech recognition (NVIDIA Parakeet via onnx-asr)."
 readme = "README.md"
@@ -37,18 +37,18 @@ dependencies = [
 dev = ["pytest", "ruff", "pyinstaller>=6.10", "pillow"]
 
 [project.urls]
-Homepage = "https://github.com/SamuelCGilbert/hotmic"
-Issues = "https://github.com/SamuelCGilbert/hotmic/issues"
+Homepage = "https://github.com/SamuelCGilbert/quipkey"
+Issues = "https://github.com/SamuelCGilbert/quipkey/issues"
 
 [project.scripts]
-hotmic = "hotmic.cli:main"
+quipkey = "quipkey.cli:main"
 
 [tool.hatch.version]
-path = "src/hotmic/meta.py"
+path = "src/quipkey/meta.py"
 pattern = 'VERSION = "(?P<version>[^"]+)"'
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/hotmic"]
+packages = ["src/quipkey"]
 
 [tool.ruff]
 line-length = 110
