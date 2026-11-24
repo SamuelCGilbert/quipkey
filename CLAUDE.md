@@ -35,7 +35,7 @@ See CONTRIBUTING.md → "How it's organized". Key points:
 - Clipboard order: CopyQ (`copyq eval`, restores the previous clipboard including images) → Klipper over D-Bus → wl-clipboard. **wl-copy steals focus on KWin.**
 - Paste key `auto`: ask KWin (a one-shot KWin script calling back over D-Bus as `APP_ID`) for the focused window class. Terminals get Shift+Insert, everything else Ctrl+V.
 - T3 Code passthrough on KDE: KWin script `quipkey-passthrough` watches the active window and restarts `quipkey-hk-on/off.service`, which grab/release the shortcut through kglobalaccel. App regex: kwinrc `[Script-quipkey-passthrough] Apps=`.
-- Build: PyInstaller onedir with uv's managed Python 3.12 (includes Tk 9), bundled `libportaudio.so.2`, system `libasound` (removed from the bundle so ALSA plugins match). The frozen app sets `LD_LIBRARY_PATH`; child processes (copyq, qdbus6, wl-copy, notify-send) must get the cleaned env (`_clean_env()`). Release builds run on ubuntu-22.04 (glibc 2.35+).
+- Build: PyInstaller onedir with the **system** Python 3 (`python3-tk`, `python3-dev`), not uv's managed Python: uv's Tk has no Xft and only sees bitmap X core fonts, so text looks broken. `PIL._tkinter_finder` is a hidden import (ImageTk needs it). Bundled `libportaudio.so.2`, system `libasound` (removed from the bundle so ALSA plugins match). The frozen app sets `LD_LIBRARY_PATH`; child processes (copyq, qdbus6, wl-copy, notify-send) must get the cleaned env (`_clean_env()`). Release builds run on ubuntu-22.04 (glibc 2.35+).
 
 ## Gotchas
 - onnxruntime-gpu 1.2x+ needs CUDA 13 DLLs. Install `onnxruntime-gpu[cuda,cudnn]` and call `ort.preload_dlls()` (done for `device: cuda`). It can't be installed next to onnxruntime-directml.
