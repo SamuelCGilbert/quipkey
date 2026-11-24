@@ -52,10 +52,13 @@ class Overlay:
         return self.H + self._menu_h()
 
     def _place(self):
-        sw, sh = self.win.winfo_screenwidth(), self.win.winfo_screenheight()
+        area = self.platform.overlay_area(self.win)
+        if area is None:
+            area = (0, 0, self.win.winfo_screenwidth(), self.win.winfo_screenheight())
+        ax, ay, aw, ah = area
         h = self._total_h()
         self.c.config(height=h)
-        self.win.geometry(f"{self.W}x{h}+{(sw - self.W) // 2}+{sh - h - 96}")
+        self.win.geometry(f"{self.W}x{h}+{ax + (aw - self.W) // 2}+{ay + ah - h - 96}")
 
     def _hit(self, x, y):
         top = self._menu_h()

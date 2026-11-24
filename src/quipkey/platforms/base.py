@@ -54,6 +54,11 @@ class Platform:
     def overlay_hide(self, win):
         win.withdraw()
 
+    def overlay_area(self, win) -> tuple[int, int, int, int] | None:
+        """(x, y, width, height) of the screen to center the pill on, right now.
+        None: Tk's screen size (fine where it follows monitor changes)."""
+        return None
+
     def ui_font(self, root) -> str:
         """The font family for the overlay and settings window."""
         return self.font

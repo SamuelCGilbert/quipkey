@@ -6,6 +6,7 @@ keystroke from a virtual uinput keyboard; the previous clipboard is restored aft
 """
 from __future__ import annotations
 
+import ctypes
 import logging
 import os
 import queue
@@ -475,6 +476,52 @@ def type_text(text: str, cfg: dict):
         notify(f"{APP_DISPLAY_NAME}: paste failed", text, 20000)
 
 
+class _XRRMonitorInfo(ctypes.Structure):
+    _fields_ = [("name", ctypes.c_ulong), ("primary", ctypes.c_int), ("automatic", ctypes.c_int),
+                ("noutput", ctypes.c_int), ("x", ctypes.c_int), ("y", ctypes.c_int),
+                ("width", ctypes.c_int), ("height", ctypes.c_int), ("mwidth", ctypes.c_int),
+                ("mheight", ctypes.c_int), ("outputs", ctypes.c_void_p)]
+
+
+class Monitors:
+    """Asks the X server (XWayland too) for the monitors as they are now. Tk reads the screen
+    size once at startup and never updates it, so after a monitor is switched off or a KVM
+    switches away, it would still center the pill on the old, bigger screen."""
+
+    def __init__(self):
+        self.dpy = None
+        try:
+            x11 = ctypes.CDLL("libX11.so.6")
+            self.xrandr = ctypes.CDLL("libXrandr.so.2")
+            x11.XOpenDisplay.restype = ctypes.c_void_p
+            x11.XOpenDisplay.argtypes = [ctypes.c_char_p]
+            x11.XDefaultRootWindow.restype = ctypes.c_ulong
+            x11.XDefaultRootWindow.argtypes = [ctypes.c_void_p]
+            self.xrandr.XRRGetMonitors.restype = ctypes.POINTER(_XRRMonitorInfo)
+            self.xrandr.XRRGetMonitors.argtypes = [ctypes.c_void_p, ctypes.c_ulong, ctypes.c_int,
+                                                   ctypes.POINTER(ctypes.c_int)]
+            self.xrandr.XRRFreeMonitors.argtypes = [ctypes.POINTER(_XRRMonitorInfo)]
+            self.dpy = x11.XOpenDisplay(None)
+            self.root = x11.XDefaultRootWindow(self.dpy) if self.dpy else 0
+        except Exception:  # noqa: BLE001
+            log.debug("No XRandR; the pill uses Tk's screen size", exc_info=True)
+            self.dpy = None
+
+    def primary(self) -> tuple[int, int, int, int] | None:
+        if not self.dpy:
+            return None
+        n = ctypes.c_int(0)
+        mons = self.xrandr.XRRGetMonitors(self.dpy, self.root, True, ctypes.byref(n))
+        if not mons or n.value <= 0:
+            return None
+        try:
+            found = [mons[i] for i in range(n.value)]
+            m = next((m for m in found if m.primary), found[0])
+            return m.x, m.y, m.width, m.height
+        finally:
+            self.xrandr.XRRFreeMonitors(mons)
+
+
 class LinuxPlatform(Platform):
     name = "linux"
 
@@ -560,6 +607,17 @@ class LinuxPlatform(Platform):
         except Exception:  # noqa: BLE001
             pass
         return True
+
+    _monitors = None
+
+    def overlay_area(self, win):
+        if self._monitors is None:
+            self._monitors = Monitors()
+        try:
+            return self._monitors.primary()
+        except Exception:  # noqa: BLE001
+            log.debug("XRRGetMonitors failed", exc_info=True)
+            return None
 
     def overlay_init(self, win):
         try:
