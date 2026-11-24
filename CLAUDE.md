@@ -4,7 +4,9 @@ Push-to-talk dictation for the whole desktop. Press **Ctrl+Shift+D** in any app:
 
 License: GPL-3.0-or-later. Dependencies are MIT/BSD/Apache, plus pystray (LGPL-3.0, Windows tray). The model weights are CC-BY-4.0 (NVIDIA): downloaded at runtime, credited in the README.
 
-**Name:** Quipkey (display), `quipkey` (commands, folders), renamed from hotmic on 2026-11-23. Never hard-code it: use `meta.py` (`APP_NAME`, `APP_DISPLAY_NAME`, `APP_ID`, `REPO_URL`). Build scripts and installers read it from there. CONTRIBUTING.md → "Renaming" lists the few other places.
+**Name:** Quipkey (display), `quipkey` (commands, folders), renamed from hotmic on 2026-11-23. Never hard-code it: use `meta.py` (`APP_NAME`, `APP_DISPLAY_NAME`, `APP_ID` = `dev.quipkey.Quipkey`, `REPO_URL`, `HOMEPAGE_URL`). Never change `APP_ID` after a release: it's the installer AppId, mutex and D-Bus name. Build scripts and installers read it from there. CONTRIBUTING.md → "Renaming" lists the few other places.
+
+**Open core:** the GPL app stays free; a paid edition may come later. Contributions need the CLA (`CLA.md`, enforced by `.github/workflows/cla.yml`), so never merge outside code without it. Pro features and license checks never go in this public repo. The name/logo are covered by `TRADEMARKS.md`.
 
 ## Layout
 
@@ -12,14 +14,16 @@ See CONTRIBUTING.md → "How it's organized". Key points:
 
 - `cli.py` must stay light: the Linux shortcut runs `quipkey toggle`, which only writes to a unix socket. Don't import numpy/onnxruntime/Tk there or in `meta.py`/`paths.py`.
 - `app.py`: state machine `idle → recording → busy`, all on the Tk thread. Other threads (hotkey, socket, model loader, tray) only post to `App.events`. A job counter lets a cancel drop an in-flight transcription.
-- `transcriber.py`: models go to `<data dir>/models` (HF cache layout) unless `HF_HOME`/`HF_HUB_CACHE` is set. Download progress is shown by watching that folder grow. `device: auto` = CUDA if present, else CPU; DirectML only when chosen (tray toggle or config), because it holds ~2.5 GB VRAM. `quantization: auto` = int8 on CPU, fp32 on GPU.
+- `transcriber.py`: models go to `<data dir>/models` (HF cache layout) unless `HF_HOME`/`HF_HUB_CACHE` is set. Download progress is shown by watching that folder grow. `device: auto` = GPU when available (CUDA, then DirectML), else CPU; falls back to CPU if the GPU load fails. "Use the GPU" off = `device: cpu`. `quantization: auto` = int8 on CPU, fp32 on GPU.
+- `settings.py`: the settings window (Tk, custom-drawn: cards, toggles, light/dark from the system; Pillow for smooth shapes). Changes save to config.json and apply live. Platform hooks in `platforms/base.py` (`set_hotkey`, `startup_enabled`/`set_startup`, `dark_mode`, `style_window`, `listen_for_show`). Opened from the tray (default item), by starting the app again (Windows: named event `<APP_ID>.show`), or `quipkey settings` (Linux: over the socket).
 - Per-user dirs (`paths.py`): Windows `%APPDATA%\quipkey` (config, state) and `%LOCALAPPDATA%\quipkey` (log, models); Linux `~/.config/quipkey`, `~/.local/state/quipkey` (state, log), `~/.local/share/quipkey` (app, models).
 
 ### Windows
 - Hotkey: `RegisterHotKey` on a message-loop thread. Esc is registered only while recording, to cancel.
 - Typing: `SendInput` with `KEYEVENTF_UNICODE`, so the clipboard is normally never touched. The window that was in front at record start is brought back first (`focus_window`, using `AttachThreadInput`). If it's gone, it can't be brought back, or `SendInput` is short (an elevated window), `type_text` returns False and the app copies the text to the clipboard and notifies. The tray has **Copy last transcript**.
 - Passthrough: if the foreground exe is in `passthrough_apps` (T3 Code by default) and the app is idle, unregister the hotkey, replay it with `SendInput`, then re-register.
-- Single instance: a named mutex (`APP_ID`). Tray icon via pystray.
+- Single instance: a named mutex (`APP_ID`). A second start signals the event `<APP_ID>.show` and exits; the running copy opens Settings. Tray icon via pystray.
+- Start at sign-in: HKCU `...\CurrentVersion\Run` value `Quipkey` (installer task + settings toggle; the uninstaller deletes it). Early builds used a Startup-folder shortcut, which the installer removes.
 - Build: PyInstaller onedir, windowed + Inno Setup per-user installer (`packaging/windows/installer.iss`) + portable zip. ~51 MB installer.
 
 ### Linux (developed on KDE Plasma 6 Wayland)

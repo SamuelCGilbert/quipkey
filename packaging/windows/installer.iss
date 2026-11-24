@@ -39,6 +39,12 @@ Name: "startup"; Description: "Start {#AppDisplayName} when I sign in to Windows
 [InstallDelete]
 ; drop the previous version's libraries so upgrades don't mix files
 Type: filesandordirs; Name: "{app}\_internal"
+; early builds started at sign-in through a Startup-folder shortcut; now it's the Run key below
+Type: files; Name: "{userstartup}\{#AppDisplayName}.lnk"
+
+[Registry]
+; same value the app's settings window turns on and off
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "{#AppDisplayName}"; ValueData: """{app}\{#AppName}.exe"""; Tasks: startup; Flags: uninsdeletevalue
 
 [Files]
 Source: "{#DistDir}\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
@@ -46,7 +52,6 @@ Source: "{#RootDir}\LICENSE"; DestDir: "{app}"; DestName: "LICENSE.txt"; Flags: 
 
 [Icons]
 Name: "{autoprograms}\{#AppDisplayName}"; Filename: "{app}\{#AppName}.exe"; AppUserModelID: "{#AppId}"
-Name: "{userstartup}\{#AppDisplayName}"; Filename: "{app}\{#AppName}.exe"; Tasks: startup
 
 [Run]
 Filename: "{app}\{#AppName}.exe"; Description: "Start {#AppDisplayName} now"; Flags: nowait postinstall skipifsilent
@@ -72,6 +77,10 @@ end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 begin
+  if CurUninstallStep = usUninstall then
+    // the settings window may have turned start-at-sign-in on after installing
+    RegDeleteValue(HKEY_CURRENT_USER, 'Software\Microsoft\Windows\CurrentVersion\Run',
+                   '{#AppDisplayName}');
   if CurUninstallStep = usPostUninstall then
   begin
     if UninstallSilent then

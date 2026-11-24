@@ -17,9 +17,9 @@ DEFAULT_CONFIG: dict = {
     # "auto": int8 on the CPU (670 MB download), full precision (fp32, 2.5 GB) on a GPU.
     # Or "int8", or null for fp32.
     "quantization": "auto",
-    # "auto": CUDA if this install has onnxruntime-gpu, else CPU.
-    # "directml" (Windows builds): any DirectX 12 GPU. Faster on a discrete GPU, but it keeps
-    # about 2.5 GB of video memory while the app runs. "cuda" | "cpu".
+    # "auto": the GPU when this build can use one (CUDA with onnxruntime-gpu, else DirectML on
+    # Windows: any DirectX 12 GPU), otherwise the CPU. The GPU keeps about 2.5 GB of video
+    # memory while the app runs. Or "cuda" | "directml" | "cpu".
     "device": "auto",
     "hotkey": "ctrl+shift+d",      # Windows only; on Linux bind it in your desktop's settings
     "input_device": None,          # sounddevice input name/index; null = system default

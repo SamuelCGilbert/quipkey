@@ -41,8 +41,10 @@ class App:
                                mic_label=lambda: self.recorder.active_label,
                                mic_options=self._mic_options, on_mic=self._choose_mic)
         self.tray = None
+        self.settings = None
         self.transcriber = self._new_transcriber()
         platform.start_input(self.cfg, self.events, lambda: self.state == "idle")
+        platform.listen_for_show(self.events)
         if platform.has_tray:
             try:
                 from .tray import Tray
@@ -93,6 +95,7 @@ class App:
                 save_state(welcomed=True)
                 self.notify(f"Running in the background. Press {hotkey} in any app, speak, "
                             "then press it again.")
+                self.open_settings()
         self._tray_update()
 
     # -- mics
@@ -141,7 +144,20 @@ class App:
             pass
         self.root.after(30, self._pump)
 
+    def open_settings(self):
+        if self.settings is None:
+            from .settings import SettingsWindow
+
+            self.settings = SettingsWindow(self)
+        try:
+            self.settings.show()
+        except Exception:  # noqa: BLE001
+            log.exception("Settings window failed")
+
     def _handle(self, ev):
+        if ev == "settings":
+            self.open_settings()
+            return
         if ev == "toggle":
             ev = "start" if self.state == "idle" else "stop"
         if ev == "start" and self.state == "idle":
@@ -232,6 +248,8 @@ class App:
     def _tray_update(self):
         if self.tray:
             self.tray.update()
+        if self.settings:
+            self.settings.refresh_status()
 
     def quit(self):
         log.info("Quitting")
@@ -245,17 +263,22 @@ class App:
         self.root.mainloop()
 
 
-def run():
+def run(open_settings: bool = False):
     platform = get_platform()
     platform.setup_process()
     setup_logging()
     if not platform.acquire_single_instance():
+        if platform.show_running_instance():  # started again: show the settings instead
+            raise SystemExit(0)
         platform.error_box(APP_DISPLAY_NAME, f"{APP_DISPLAY_NAME} is already running. Look for "
                            "its icon in the notification area (system tray).")
         raise SystemExit(0)
     log.info("Starting %s %s", APP_NAME, VERSION)
     try:
-        App(platform).run()
+        app = App(platform)
+        if open_settings:
+            app.root.after(100, app.open_settings)
+        app.run()
     except SystemExit:
         raise
     except Exception as e:

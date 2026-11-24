@@ -9,7 +9,7 @@ import sys
 
 from .meta import APP_DISPLAY_NAME, APP_NAME, REPO_URL, VERSION
 
-CLIENT_CMDS = ("toggle", "start", "stop", "cancel")
+CLIENT_CMDS = ("toggle", "start", "stop", "cancel", "settings")
 
 USAGE = f"""{APP_NAME} {VERSION}: press a hotkey, speak, and the text is typed into the focused app.
 
@@ -17,6 +17,7 @@ Usage:
   {APP_NAME}            Start (runs in the background; Windows: Ctrl+Shift+D)
   {APP_NAME} toggle     Linux: start/stop dictation (bind this to a keyboard shortcut)
   {APP_NAME} start | stop | cancel
+  {APP_NAME} settings   Open the settings window
   {APP_NAME} devices    List audio devices
   {APP_NAME} paths      Show where settings, logs and models are kept
   {APP_NAME} --version
@@ -73,6 +74,11 @@ def _paths():
 def main(argv: list[str] | None = None):
     args = sys.argv[1:] if argv is None else argv
     cmd = args[0] if args else ""
+    if cmd == "settings" and sys.platform == "win32":
+        from .app import run
+
+        run(open_settings=True)  # a running copy opens its settings; otherwise start with them
+        return
     if cmd in CLIENT_CMDS:
         raise SystemExit(_client(cmd))
     if cmd in ("-h", "--help", "help"):

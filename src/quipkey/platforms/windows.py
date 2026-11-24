@@ -19,6 +19,12 @@ user32 = ctypes.WinDLL("user32", use_last_error=True)
 kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
 kernel32.OpenProcess.restype = wintypes.HANDLE
 kernel32.CreateMutexW.restype = wintypes.HANDLE
+kernel32.CreateEventW.restype = wintypes.HANDLE
+kernel32.OpenEventW.restype = wintypes.HANDLE
+kernel32.WaitForSingleObject.argtypes = [wintypes.HANDLE, wintypes.DWORD]
+kernel32.WaitForSingleObject.restype = wintypes.DWORD
+kernel32.SetEvent.argtypes = [wintypes.HANDLE]
+kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
 user32.GetForegroundWindow.restype = wintypes.HWND
 user32.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
 for _f in (user32.IsWindow, user32.IsIconic, user32.SetForegroundWindow, user32.BringWindowToTop):
@@ -127,6 +133,7 @@ class HotkeyThread(threading.Thread):
         self.tid = None
         self.ok = threading.Event()
         self.failed = False
+        self._want, self._done, self._changed = None, threading.Event(), False
 
     def set_esc(self, on: bool):
         if self.tid:
@@ -150,6 +157,26 @@ class HotkeyThread(threading.Thread):
                 user32.RegisterHotKey(None, HK_ESC, MOD_NOREPEAT, VK_ESCAPE)
             elif msg.message == WM_APP + 2:
                 user32.UnregisterHotKey(None, HK_ESC)
+            elif msg.message == WM_APP + 3:
+                self._apply_change()
+
+    def change(self, combo) -> bool:
+        """Switch to (mods, vk), or None to release the hotkey for now. False if taken."""
+        self._want, self._done = combo, threading.Event()
+        user32.PostThreadMessageW(self.tid, WM_APP + 3, 0, 0)
+        self._done.wait(2)
+        return self._changed
+
+    def _apply_change(self):
+        user32.UnregisterHotKey(None, HK_MAIN)
+        self._changed = True
+        if self._want is not None:
+            mods, vk = self._want
+            if user32.RegisterHotKey(None, HK_MAIN, mods | MOD_NOREPEAT, vk):
+                self.mods, self.vk = mods, vk
+            else:
+                self._changed = False
+        self._done.set()
 
     def _passthrough(self):
         """Re-deliver the hotkey to the focused app: drop our registration, replay the key."""
@@ -176,11 +203,23 @@ def wait_modifiers_released(timeout=1.5):
         time.sleep(0.02)
 
 
+RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
+SHOW_EVENT = f"{APP_ID}.show"
+VK_NAMES = {0x20: "space", **{0x70 + i: f"f{i + 1}" for i in range(24)}}
+
+
+def _legacy_startup_link() -> str:
+    # The first dev builds' installer put a shortcut in the Startup folder.
+    return os.path.join(os.environ.get("APPDATA", ""), r"Microsoft\Windows\Start Menu\Programs\Startup",
+                        f"{APP_DISPLAY_NAME}.lnk")
+
+
 class WindowsPlatform(Platform):
     name = "windows"
     font = "Segoe UI"
     transparent_overlay = True
     has_tray = True
+    can_set_hotkey = True
 
     def __init__(self):
         self.hk: HotkeyThread | None = None
@@ -203,9 +242,8 @@ class WindowsPlatform(Platform):
         return ctypes.get_last_error() != 183  # ERROR_ALREADY_EXISTS
 
     def start_input(self, cfg, events, can_passthrough):
-        apps = {a.lower() for a in cfg["passthrough_apps"]}
-
-        def should_passthrough():
+        def should_passthrough():  # reads the setting each time: the settings window edits it
+            apps = {a.lower() for a in cfg["passthrough_apps"]}
             return bool(apps) and can_passthrough() and foreground_exe().lower() in apps
 
         self.hk = HotkeyThread(cfg["hotkey"], events, should_passthrough)
@@ -244,6 +282,115 @@ class WindowsPlatform(Platform):
             log.warning("SendInput sent %d/%d (target may be elevated)", sent, len(seq))
             return False
         return True
+
+    # -- settings window
+    def set_hotkey(self, hotkey):
+        if not self.hk:
+            return "The shortcut isn't active"
+        try:
+            combo = parse_hotkey(hotkey) if hotkey else None
+        except ValueError as e:
+            return str(e)
+        if self.hk.change(combo):
+            if hotkey:
+                log.info("Hotkey is now %s", hotkey)
+            return None
+        return (f"{self.hotkey_label({'hotkey': hotkey})} is already used by another app. "
+                "Pick a different shortcut.")
+
+    def hotkey_from_event(self, event):
+        vk = event.keycode
+        if 0x41 <= vk <= 0x5A or 0x30 <= vk <= 0x39:
+            key = chr(vk).lower()
+        elif vk in VK_NAMES:
+            key = VK_NAMES[vk]
+        else:
+            return None  # a modifier on its own, or a key we can't register
+
+        def held(*vks):
+            return any(user32.GetAsyncKeyState(v) & 0x8000 for v in vks)
+        mods = [name for name, vks in (("ctrl", (0x11,)), ("alt", (0x12,)), ("shift", (0x10,)),
+                                       ("win", (0x5B, 0x5C))) if held(*vks)]
+        if not ({"ctrl", "alt", "win"} & set(mods)) and not key.startswith("f"):
+            return None  # a plain letter would fire while typing
+        return "+".join(mods + [key])
+
+    def startup_enabled(self):
+        import sys
+        import winreg
+
+        if not getattr(sys, "frozen", False):
+            return None  # a source checkout: nothing sensible to start
+        try:
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY) as k:
+                winreg.QueryValueEx(k, APP_DISPLAY_NAME)
+                return True
+        except OSError:
+            return os.path.exists(_legacy_startup_link())
+
+    def set_startup(self, on):
+        import sys
+        import winreg
+
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, RUN_KEY) as k:
+            if on:
+                winreg.SetValueEx(k, APP_DISPLAY_NAME, 0, winreg.REG_SZ, f'"{sys.executable}"')
+            else:
+                try:
+                    winreg.DeleteValue(k, APP_DISPLAY_NAME)
+                except FileNotFoundError:
+                    pass
+        if not on and os.path.exists(_legacy_startup_link()):
+            os.remove(_legacy_startup_link())
+        log.info("Start at sign-in: %s", on)
+
+    def dark_mode(self):
+        import winreg
+
+        try:
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER,
+                                r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize") as k:
+                return winreg.QueryValueEx(k, "AppsUseLightTheme")[0] == 0
+        except OSError:
+            return False
+
+    def style_window(self, win, dark):
+        try:
+            win.update_idletasks()
+            hwnd = user32.GetParent(win.winfo_id()) or win.winfo_id()
+            val = ctypes.c_int(1 if dark else 0)
+            # DWMWA_USE_IMMERSIVE_DARK_MODE: 20 (19 on early Windows 10 builds)
+            for attr in (20, 19):
+                if ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, attr, ctypes.byref(val), 4) == 0:
+                    break
+        except Exception:  # noqa: BLE001
+            log.debug("dark title bar failed", exc_info=True)
+
+    def activate_window(self, win):
+        win.update_idletasks()
+        hwnd = user32.GetParent(win.winfo_id()) or win.winfo_id()
+        if not focus_window(hwnd):
+            win.lift()
+        win.focus_force()
+
+    def listen_for_show(self, events):
+        h = kernel32.CreateEventW(None, False, False, SHOW_EVENT)
+        if not h:
+            return
+
+        def wait():
+            while kernel32.WaitForSingleObject(h, 0xFFFFFFFF) == 0:
+                events.put("settings")
+        threading.Thread(target=wait, daemon=True, name="show-event").start()
+
+    def show_running_instance(self):
+        h = kernel32.OpenEventW(0x2, False, SHOW_EVENT)  # EVENT_MODIFY_STATE
+        if not h:
+            return False
+        try:
+            return bool(kernel32.SetEvent(h))
+        finally:
+            kernel32.CloseHandle(h)
 
     # -- overlay: a tool window that never activates, so focus stays in the user's app
     def overlay_init(self, win):

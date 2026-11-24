@@ -491,6 +491,58 @@ class LinuxPlatform(Platform):
     def type_text(self, text, target, cfg):
         threading.Thread(target=type_text, args=(text, cfg), daemon=True).start()
 
+    def hotkey_help(self):
+        if _kde():
+            return f"Change it in System Settings → Keyboard → Shortcuts → {APP_DISPLAY_NAME}."
+        if "gnome" in os.environ.get("XDG_CURRENT_DESKTOP", "").lower():
+            return "Change it in Settings → Keyboard → Keyboard Shortcuts → Custom Shortcuts."
+        return f"Set in your desktop's keyboard settings: it runs `{APP_NAME} toggle`."
+
+    def _systemctl(self, *args):
+        return _run(["systemctl", "--user", *args], capture_output=True, text=True, timeout=10)
+
+    def startup_enabled(self):
+        try:
+            r = self._systemctl("is-enabled", f"{APP_NAME}.service")
+        except Exception:  # noqa: BLE001
+            return None
+        state = r.stdout.strip()
+        if state in ("enabled", "enabled-runtime"):
+            return True
+        if state == "disabled":
+            return False
+        return None  # no unit installed (a source checkout)
+
+    def set_startup(self, on):
+        r = self._systemctl("enable" if on else "disable", f"{APP_NAME}.service")
+        if r.returncode:
+            raise RuntimeError(r.stderr.strip() or "systemctl failed")
+        log.info("Start at sign-in: %s", on)
+
+    def dark_mode(self):
+        try:  # KDE: the window background of the active color scheme
+            cfg = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"),
+                               "kdeglobals")
+            section = ""
+            with open(cfg, encoding="utf-8", errors="ignore") as f:
+                for line in f:
+                    line = line.strip()
+                    if line.startswith("["):
+                        section = line
+                    elif section == "[Colors:Window]" and line.startswith("BackgroundNormal="):
+                        r, g, b = (int(x) for x in line.split("=", 1)[1].split(",")[:3])
+                        return 0.299 * r + 0.587 * g + 0.114 * b < 128
+        except Exception:  # noqa: BLE001
+            pass
+        try:  # GNOME and others
+            r = _run(["gsettings", "get", "org.gnome.desktop.interface", "color-scheme"],
+                     capture_output=True, text=True, timeout=3)
+            if r.returncode == 0 and r.stdout.strip():
+                return "dark" in r.stdout
+        except Exception:  # noqa: BLE001
+            pass
+        return True
+
     def overlay_init(self, win):
         try:
             win.wm_attributes("-type", "notification")

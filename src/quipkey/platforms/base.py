@@ -54,6 +54,46 @@ class Platform:
     def overlay_hide(self, win):
         win.withdraw()
 
+    # -- settings window
+    # True if the app owns the global shortcut and can change it (`set_hotkey`).
+    can_set_hotkey = False
+
+    def hotkey_help(self) -> str:
+        """Where to change the shortcut, when the app can't."""
+        return "Set in your desktop's keyboard shortcut settings."
+
+    def set_hotkey(self, hotkey: str | None) -> str | None:
+        """Switch the global shortcut (None: release it for now). -> error message or None."""
+        return "Not supported here"
+
+    def hotkey_from_event(self, event) -> str | None:
+        """A Tk KeyPress while recording a new shortcut -> "ctrl+shift+d", or None (not yet)."""
+        return None
+
+    def startup_enabled(self) -> bool | None:
+        """Whether the app starts at sign-in; None if this install can't change it."""
+        return None
+
+    def set_startup(self, on: bool):
+        raise NotImplementedError
+
+    def dark_mode(self) -> bool:
+        return True
+
+    def style_window(self, win, dark: bool):
+        """Match a normal window's frame to the theme (dark title bar and the like)."""
+
+    def activate_window(self, win):
+        win.lift()
+        win.focus_force()
+
+    def listen_for_show(self, events: queue.Queue):
+        """Put "settings" into `events` when the user starts the app again while it runs."""
+
+    def show_running_instance(self) -> bool:
+        """Ask the running copy to open its settings. True if that worked."""
+        return False
+
     # -- messages
     def error_box(self, title: str, message: str):
         import sys

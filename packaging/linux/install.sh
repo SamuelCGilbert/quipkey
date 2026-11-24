@@ -44,6 +44,7 @@ BIN="$HOME/.local/bin/$APP"
 UNITDIR="$CONFIG/systemd/user"
 DESKTOP_ID="$APP-toggle.desktop"
 DESKTOP_FILE="$DATA/applications/$DESKTOP_ID"
+SETTINGS_FILE="$DATA/applications/$APP-settings.desktop"
 ACTION_NAME="$DISPLAY_NAME (toggle)"
 KWIN_ID="$APP-passthrough"
 KWIN_DIR="$DATA/kwin/scripts/$KWIN_ID"
@@ -264,7 +265,7 @@ if [ "$UNINSTALL" = 1 ]; then
   kde_remove
   gnome_remove
   sysd daemon-reload 2>/dev/null || true
-  rm -f "$BIN" "$DESKTOP_FILE" "$ICON"
+  rm -f "$BIN" "$DESKTOP_FILE" "$SETTINGS_FILE" "$ICON"
   rm -rf "$APPDIR" "$PREFIX/install.sh"
   if [ "$PURGE" = 1 ]; then
     rm -rf "${PREFIX:?}" "${CONFIG:?}/${APP:?}" "${STATE:?}/${APP:?}"
@@ -304,6 +305,18 @@ Icon=$APP
 NoDisplay=true
 StartupNotify=false
 X-KDE-GlobalAccel-CommandShortcut=true
+EOF
+
+cat > "$SETTINGS_FILE" <<EOF
+[Desktop Entry]
+Type=Application
+Name=$DISPLAY_NAME
+GenericName=Dictation settings
+Comment=Settings for $DISPLAY_NAME dictation
+Exec=$BIN settings
+Icon=$APP
+Categories=Utility;Accessibility;
+StartupNotify=false
 EOF
 
 cat > "$UNITDIR/$APP.service" <<EOF

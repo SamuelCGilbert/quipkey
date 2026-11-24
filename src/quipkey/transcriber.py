@@ -60,6 +60,18 @@ def _dir_size(path: Path) -> int:
     return total
 
 
+def gpu_device(avail: list[str] | None = None) -> str | None:
+    """The GPU provider this build can use ("cuda" first, then "directml"), or None."""
+    if avail is None:
+        import onnxruntime as ort
+
+        avail = ort.get_available_providers()
+    for dev in ("cuda", "directml"):
+        if PROVIDERS[dev] in avail:
+            return dev
+    return None
+
+
 class Transcriber:
     """Loads the model in a background thread. `status(text | None)` reports download progress
     ("Downloading speech model… 120 MB") and None when the download ends; `on_ready(error)` is
@@ -84,7 +96,7 @@ class Transcriber:
         avail = ort.get_available_providers()
         dev = str(self.cfg["device"]).lower()
         if dev == "auto":
-            dev = "cuda" if "CUDAExecutionProvider" in avail else "cpu"
+            dev = gpu_device(avail) or "cpu"
         if dev not in PROVIDERS:
             log.warning("Unknown device %r; using the CPU", self.cfg["device"])
             dev = "cpu"
