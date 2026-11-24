@@ -11,7 +11,9 @@ Keep this module free of imports: the Linux hotkey client and the build scripts 
 
 APP_NAME = "quipkey"                 # folders, binaries, unit/socket names: lowercase, no spaces
 APP_DISPLAY_NAME = "Quipkey"         # shown in the tray, notifications and dialogs
-APP_ID = "io.github.samuelcgilbert.quipkey"  # reverse-DNS id (D-Bus name, Windows AppUserModelID)
+APP_ID = "dev.quipkey.Quipkey"       # reverse-DNS id (D-Bus name, Windows AppUserModelID,
+                                     # installer AppId): never change it after a release
 VERSION = "0.1.0"
 REPO_URL = "https://github.com/SamuelCGilbert/quipkey"
+HOMEPAGE_URL = "https://quipkey.dev"      # not live yet; link it once the site exists
 DESCRIPTION = "Press a hotkey, speak, and the text is typed into any app. Local speech recognition."

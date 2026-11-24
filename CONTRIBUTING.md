@@ -6,7 +6,7 @@ Thanks for helping. Bug reports, ideas, docs fixes and code are all welcome.
 - **Questions and ideas:** [Discussions](https://github.com/SamuelCGilbert/quipkey/discussions).
 - **Code:** for anything bigger than a small fix, open an issue first so we can agree on the approach.
 
-By contributing, you agree that your contribution is licensed under the GPL-3.0-or-later, like the rest of the project.
+Quipkey is GPL-3.0-or-later. Before your first pull request can be merged, you sign the [Contributor License Agreement](CLA.md): a bot asks you to, and you sign by replying with one sentence. You keep the copyright to your work; the CLA lets the project also offer Quipkey under other terms (for example a paid edition) while the community edition stays GPL. Forks need their own name: see [TRADEMARKS.md](TRADEMARKS.md).
 
 ## Development setup
 
@@ -41,6 +41,7 @@ src/quipkey/
   transcriber.py  model download and loading, CPU/GPU choice, transcription
   overlay.py      the pill (Tk), which never takes focus
   tray.py         notification-area icon (Windows)
+  settings.py     the settings window (applies changes live)
   text.py         clean-up of the recognized text
   platforms/
     base.py       the interface each OS implements

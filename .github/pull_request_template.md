@@ -13,4 +13,4 @@
 
 - [ ] `ruff check src tests scripts` and `pytest` pass
 - [ ] Docs (README, `config.py` comments) are updated if behavior or settings changed
-- [ ] I agree to license my contribution under GPL-3.0-or-later
+- [ ] I have signed the [CLA](https://github.com/SamuelCGilbert/quipkey/blob/main/CLA.md) (the bot asks on your first pull request)
