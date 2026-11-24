@@ -97,6 +97,8 @@ def pyinstaller(ico: Path) -> Path:
            "--specpath", BUILD, "--paths", SRC,
            "--collect-data", "onnx_asr", "--copy-metadata", "onnx-asr",
            "--collect-submodules", PKG,
+           # ImageTk finds Tk through this; PyInstaller misses it on Linux (settings window)
+           "--hidden-import", "PIL._tkinter_finder",
            "--exclude-module", "pytest", "--exclude-module", "matplotlib",
            "--exclude-module", "IPython", "--exclude-module", "torch",
            "--exclude-module", "hf_xet"]  # downloads use plain HTTPS (see transcriber.py)

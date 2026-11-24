@@ -44,11 +44,13 @@ class Shapes:
 
     def __init__(self, master, scale: float):
         self.master, self.s, self.cache = master, scale, {}
-        try:
+        try:  # make a real image: ImageTk can import fine and still fail to reach Tk
             from PIL import Image, ImageDraw, ImageTk  # noqa: F401
 
+            ImageTk.PhotoImage(Image.new("RGBA", (1, 1)), master=master)
             self.ok = True
-        except ImportError:
+        except Exception:  # noqa: BLE001
+            log.warning("Pillow can't draw into Tk here; using plain shapes", exc_info=True)
             self.ok = False
 
     def _img(self, key, w, h, draw):

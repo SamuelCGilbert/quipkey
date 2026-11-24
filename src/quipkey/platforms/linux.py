@@ -493,7 +493,8 @@ class LinuxPlatform(Platform):
 
     def hotkey_help(self):
         if _kde():
-            return f"Change it in System Settings → Keyboard → Shortcuts → {APP_DISPLAY_NAME}."
+            return (f"Change it in System Settings → Keyboard → Shortcuts → "
+                    f"{APP_DISPLAY_NAME} (toggle).")
         if "gnome" in os.environ.get("XDG_CURRENT_DESKTOP", "").lower():
             return "Change it in Settings → Keyboard → Keyboard Shortcuts → Custom Shortcuts."
         return f"Set in your desktop's keyboard settings: it runs `{APP_NAME} toggle`."
