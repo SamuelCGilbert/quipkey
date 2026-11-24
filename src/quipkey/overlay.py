@@ -39,8 +39,9 @@ class Overlay:
         self.c.bind("<Motion>", self._motion)
         self.c.bind("<Leave>", lambda e: self._set_hover(None))
         self.win.withdraw()
-        self.font = (platform.font, 10)
-        self.small = (platform.font, 9)
+        fam = platform.ui_font(root)
+        self.font = (fam, 10)
+        self.small = (fam, 9)
         self._tick()
 
     # -- geometry: the window grows upward when the mic menu is open; the pill stays put

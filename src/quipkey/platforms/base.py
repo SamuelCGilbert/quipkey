@@ -54,6 +54,10 @@ class Platform:
     def overlay_hide(self, win):
         win.withdraw()
 
+    def ui_font(self, root) -> str:
+        """The font family for the overlay and settings window."""
+        return self.font
+
     # -- settings window
     # True if the app owns the global shortcut and can change it (`set_hotkey`).
     can_set_hotkey = False

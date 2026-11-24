@@ -491,6 +491,23 @@ class LinuxPlatform(Platform):
     def type_text(self, text, target, cfg):
         threading.Thread(target=type_text, args=(text, cfg), daemon=True).start()
 
+    _font = None
+
+    def ui_font(self, root):
+        # Tk's generic "Sans" can resolve to a bitmap or monospace font in the bundled Tk.
+        if self._font is None:
+            import tkinter.font
+
+            have = set(tkinter.font.families(root))
+            for fam in ("Noto Sans", "Inter", "Cantarell", "Ubuntu", "DejaVu Sans",
+                        "Liberation Sans"):
+                if fam in have:
+                    self._font = fam
+                    break
+            else:
+                self._font = self.font
+        return self._font
+
     def hotkey_help(self):
         if _kde():
             return (f"Change it in System Settings → Keyboard → Shortcuts → "
