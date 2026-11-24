@@ -49,6 +49,8 @@ class Tray:
             item(f"{APP_DISPLAY_NAME} {VERSION}", None, enabled=False),
             item(lambda _: app.model_status, None, enabled=False),
             sep,
+            item("Copy last transcript", self._copy_last, enabled=lambda _: bool(app.last_text)),
+            sep,
             *gpu,
             item("Settings file", self._settings),
             item("Log folder", lambda: _open(paths.log_dir())),
@@ -66,6 +68,9 @@ class Tray:
         path = ensure_config_file()
         self.notify("Quit and start the app again after you edit the settings.")
         _open(path)
+
+    def _copy_last(self):
+        self.app.events.put(("call", self.app.copy_last))
 
     def _toggle_gpu(self):
         def change():

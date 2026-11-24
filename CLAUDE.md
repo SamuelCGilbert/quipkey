@@ -17,7 +17,7 @@ See CONTRIBUTING.md → "How it's organized". Key points:
 
 ### Windows
 - Hotkey: `RegisterHotKey` on a message-loop thread. Esc is registered only while recording, to cancel.
-- Typing: `SendInput` with `KEYEVENTF_UNICODE`, so the clipboard is never touched.
+- Typing: `SendInput` with `KEYEVENTF_UNICODE`, so the clipboard is normally never touched. The window that was in front at record start is brought back first (`focus_window`, using `AttachThreadInput`). If it's gone, it can't be brought back, or `SendInput` is short (an elevated window), `type_text` returns False and the app copies the text to the clipboard and notifies. The tray has **Copy last transcript**.
 - Passthrough: if the foreground exe is in `passthrough_apps` (T3 Code by default) and the app is idle, unregister the hotkey, replay it with `SendInput`, then re-register.
 - Single instance: a named mutex (`APP_ID`). Tray icon via pystray.
 - Build: PyInstaller onedir, windowed + Inno Setup per-user installer (`packaging/windows/installer.iss`) + portable zip. ~51 MB installer.

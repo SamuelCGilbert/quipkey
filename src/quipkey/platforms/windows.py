@@ -20,6 +20,9 @@ kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
 kernel32.OpenProcess.restype = wintypes.HANDLE
 kernel32.CreateMutexW.restype = wintypes.HANDLE
 user32.GetForegroundWindow.restype = wintypes.HWND
+user32.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
+for _f in (user32.IsWindow, user32.IsIconic, user32.SetForegroundWindow, user32.BringWindowToTop):
+    _f.argtypes = [wintypes.HWND]
 
 MOD = {"alt": 0x1, "ctrl": 0x2, "control": 0x2, "shift": 0x4, "win": 0x8}
 MOD_NOREPEAT = 0x4000
@@ -86,6 +89,31 @@ def _send(seq):
     arr = (INPUT * len(seq))(*[INPUT(type=1, u=_U(ki=KEYBDINPUT(vk, scan, f, 0, 0)))
                                for vk, scan, f in seq])
     return user32.SendInput(len(seq), arr, ctypes.sizeof(INPUT))
+
+
+def focus_window(hwnd) -> bool:
+    """Bring `hwnd` to the front. Windows only lets the app that got the last input do that,
+    so borrow the foreground thread's input state while asking. True if it's in front now."""
+    if user32.GetForegroundWindow() == hwnd:
+        return True
+    if user32.IsIconic(hwnd):
+        user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+    me = kernel32.GetCurrentThreadId()
+    fg = user32.GetWindowThreadProcessId(user32.GetForegroundWindow(), None)
+    attached = bool(fg and fg != me and user32.AttachThreadInput(me, fg, True))
+    try:
+        user32.BringWindowToTop(hwnd)
+        user32.SetForegroundWindow(hwnd)
+    finally:
+        if attached:
+            user32.AttachThreadInput(me, fg, False)
+    end = time.time() + 0.3
+    while time.time() < end:
+        if user32.GetForegroundWindow() == hwnd:
+            time.sleep(0.03)  # let it settle its keyboard focus
+            return True
+        time.sleep(0.01)
+    return False
 
 
 class HotkeyThread(threading.Thread):
@@ -198,11 +226,15 @@ class WindowsPlatform(Platform):
 
     def type_text(self, text, target, cfg):
         if not text:
-            return
+            return True
         wait_modifiers_released()
-        if target and user32.GetForegroundWindow() != target:
-            user32.SetForegroundWindow(target)
-            time.sleep(0.05)
+        if target:
+            if not user32.IsWindow(target):
+                log.warning("The window dictation started in is gone; not typing")
+                return False
+            if not focus_window(target):
+                log.warning("Couldn't bring back the window dictation started in; not typing")
+                return False
         data = text.encode("utf-16-le")
         units = [int.from_bytes(data[i:i + 2], "little") for i in range(0, len(data), 2)]
         seq = [(0, u, f) for u in units
@@ -210,6 +242,8 @@ class WindowsPlatform(Platform):
         sent = _send(seq)
         if sent != len(seq):
             log.warning("SendInput sent %d/%d (target may be elevated)", sent, len(seq))
+            return False
+        return True
 
     # -- overlay: a tool window that never activates, so focus stays in the user's app
     def overlay_init(self, win):

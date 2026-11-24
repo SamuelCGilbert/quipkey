@@ -22,7 +22,9 @@ Speech recognition runs on your own computer. No cloud, no account, no subscript
 2. On first start, Quipkey downloads the speech model (about 650 MB). A pill shows the progress.
 3. Press **Ctrl+Shift+D** in any app, speak, then press **Ctrl+Shift+D** again. Press **Esc** to cancel.
 
-Quipkey sits in the notification area (system tray). Its menu shows the status and has the settings file, the log folder, a GPU switch and **Quit**. The installer can also start Quipkey when you sign in.
+Quipkey sits in the notification area (system tray). Its menu shows the status and has **Copy last transcript**, the settings file, the log folder, a GPU switch and **Quit**.
+
+Quipkey types into the window you were in when you started dictating, even if you switch to another window while it transcribes. If that window is closed, or Windows won't let Quipkey type into it (for example, an app that runs as administrator), the text goes on the clipboard instead and a notification tells you to paste it. The installer can also start Quipkey when you sign in.
 
 No installer wanted? Use the `-portable.zip`: unzip it anywhere and run `quipkey.exe`.
 

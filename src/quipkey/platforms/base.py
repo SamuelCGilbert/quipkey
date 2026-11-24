@@ -38,7 +38,9 @@ class Platform:
         return None
 
     def type_text(self, text: str, target, cfg: dict):
-        """Type `text` into the focused app. May block briefly; called on the UI thread."""
+        """Type `text` into the app that had focus when recording started (`target`).
+        May block briefly; called on the UI thread. Return False if it surely failed (the
+        app then puts the text on the clipboard); None or True otherwise."""
         raise NotImplementedError
 
     # -- overlay window

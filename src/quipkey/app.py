@@ -31,6 +31,7 @@ class App:
         self.recorder = Recorder(self.cfg)
         self.state = "idle"
         self.target = None
+        self.last_text = ""  # the last transcript, for "Copy last transcript" in the tray
         self.job = 0
         self.model_status = "Loading speech model…"
         self.root = tk.Tk()
@@ -195,9 +196,27 @@ class App:
         if not text:
             self._flash("Didn't catch that")
             return
+        self.last_text = text
+        self._tray_update()
         self.overlay.set("hidden")
         self.root.update_idletasks()
-        self.platform.type_text(text, self.target, self.cfg)
+        if self.platform.type_text(text, self.target, self.cfg) is False:
+            self.copy_last()
+            self.notify("Couldn't type into the window you started in, so the text is on the "
+                        "clipboard. Press Ctrl+V to paste it.")
+
+    def copy_last(self) -> bool:
+        """Put the last transcript on the clipboard (UI thread)."""
+        if not self.last_text:
+            return False
+        try:
+            self.root.clipboard_clear()
+            self.root.clipboard_append(self.last_text)
+            self.root.update()
+        except Exception:  # noqa: BLE001
+            log.exception("Couldn't copy to the clipboard")
+            return False
+        return True
 
     def _flash(self, msg, ms=1400):
         self.overlay.set("info", msg)
